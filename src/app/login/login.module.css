@@ -1,0 +1,41 @@
+.custom-tabs :global(.ant-tabs-nav) {
+  margin-bottom: 24px;
+}
+
+.custom-tabs :global(.ant-tabs-tab) {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.custom-tabs :global(.ant-tabs-tab-active) {
+  color: #fff !important;
+}
+
+.custom-tabs :global(.ant-tabs-ink-bar) {
+  background: linear-gradient(to right, #3b82f6, #22d3ee) !important;
+}
+
+.custom-tabs :global(.ant-input),
+.custom-tabs :global(.ant-input-password) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.custom-tabs :global(.ant-input:hover),
+.custom-tabs :global(.ant-input-password:hover) {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.custom-tabs :global(.ant-input:focus),
+.custom-tabs :global(.ant-input-password:focus) {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+.custom-tabs :global(.ant-input-password-icon) {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.custom-tabs :global(.ant-form-item-label > label) {
+  color: rgba(255, 255, 255, 0.85) !important;
+} 
