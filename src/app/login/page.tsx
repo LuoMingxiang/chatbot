@@ -10,10 +10,9 @@ const AuthPage: React.FC = () => {
     const [mode, setMode] = useState<'login' | 'register'>('login')
     const [loading, setLoading] = useState(false)
     const router = useRouter()
-    const handleSubmit = async (values: any) => {
+    const handleSubmit = async (values: { email: string, password: string }) => {
         setLoading(true)
         const { email, password } = values
-
         if (mode === 'login') {
             message.loading({ content: '正在登录...', key: 'auth' })
             const { error } = await supabase.auth.signInWithPassword({ email, password })
