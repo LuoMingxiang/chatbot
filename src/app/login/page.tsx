@@ -9,48 +9,33 @@ import { useRouter } from 'next/navigation'
 const AuthPage: React.FC = () => {
     const [mode, setMode] = useState<'login' | 'register'>('login')
     const [loading, setLoading] = useState(false)
-    // const router = useRouter()
-    const [messageApi] = message.useMessage();
+    const router = useRouter()
     const handleSubmit = async (values: any) => {
         setLoading(true)
         const { email, password } = values
 
         if (mode === 'login') {
-            // message.loading({ content: '正在登录...', key: 'auth' })
-            messageApi.open({
-                type: 'success',
-                content: '该邮箱尚未验证，请前往邮箱完成验证后再登录',
-            });
-            // const { error } = await supabase.auth.signInWithPassword({ email, password })
+            message.loading({ content: '正在登录...', key: 'auth' })
+            const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-            // if (error) {
-            //     console.log(error.message)
-            //     // if (error.message.includes('Email not confirmed')) {
-            //     //     setLoading(false)
-            //     //     return message.warning({
-            //     //         content: '该邮箱尚未验证，请前往邮箱完成验证后再登录',
-            //     //         key: 'auth',
-            //     //     })
-            //     // }
+            if (error) {
+                // 自动注册逻辑
+                if (error.message.includes('Invalid login credentials')) {
+                    const { error: signUpError } = await supabase.auth.signUp({ email, password })
+                    if (signUpError) {
+                        setLoading(false)
+                        return message.error({ content: `注册失败：${signUpError.message}`, key: 'auth' })
+                    }
+                    message.success({ content: '自动注册成功，请前往邮箱验证', key: 'auth' })
+                    setLoading(false)
+                    return
+                }
+                setLoading(false)
+                return message.error({ content: `登录失败：${error.message}`, key: 'auth' })
+            }
 
-            //     // 自动注册逻辑
-            //     // if (error.message.includes('Invalid login credentials')) {
-            //     //     const { error: signUpError } = await supabase.auth.signUp({ email, password })
-            //     //     if (signUpError) {
-            //     //         setLoading(false)
-            //     //         return message.error({ content: `注册失败：${signUpError.message}`, key: 'auth' })
-            //     //     }
-            //     //     message.success({ content: '自动注册成功，请前往邮箱验证', key: 'auth' })
-            //     //     setLoading(false)
-            //     //     return
-            //     // }
-
-            //     // setLoading(false)
-            //     // return messageApi.error({ content: `登录失败：${error.message}`, key: 'auth' })
-            // }
-
-            // message.success({ content: '登录成功', key: 'auth' })
-            // router.push('/chat')
+            message.success({ content: '登录成功', key: 'auth' })
+            router.push('/')
         } else {
             message.loading({ content: '正在注册...', key: 'auth' })
 
