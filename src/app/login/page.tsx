@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { Form, Input, Button, message, Tabs } from 'antd'
+import { Form, Input, Button, message, Tabs, Spin } from 'antd'
 import { LockOutlined, UserOutlined, GoogleOutlined } from '@ant-design/icons'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { useClientAuthRedirect } from '@/hooks/useClientAuthRedirect';
 
 const AuthPage: React.FC = () => {
     const [mode, setMode] = useState<'login' | 'register'>('login')
     const [loading, setLoading] = useState(false)
     const router = useRouter()
+    const { ready } = useClientAuthRedirect()
+
     const handleSubmit = async (values: { email: string, password: string }) => {
         setLoading(true)
         const { email, password } = values
@@ -54,7 +57,13 @@ const AuthPage: React.FC = () => {
         const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
         if (error) message.error(error.message)
     }
-
+    if (!ready) {
+        return (
+            <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Spin tip="正在加载中..." size='large' fullscreen />
+            </div>
+        )
+    }
     return (
         <div
             className="flex justify-center items-center min-h-screen"

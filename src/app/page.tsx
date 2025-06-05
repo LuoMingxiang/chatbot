@@ -2,10 +2,11 @@
 
 import { Bubble, Sender, XRequest } from '@ant-design/x'
 import { useState, useRef, useEffect } from 'react'
-import { Typography, Layout, theme, Flex } from 'antd'
+import { Typography, Layout, theme, Flex, Spin } from 'antd'
 import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 import markdownit from 'markdown-it'
 import type { BubbleProps } from '@ant-design/x'
+import { useClientAuthRedirect } from '@/hooks/useClientAuthRedirect';
 
 const { Header, Content } = Layout
 const { Title } = Typography
@@ -16,13 +17,32 @@ interface ChatMessage {
 }
 
 const ChatPage: React.FC = () => {
-  const { token } = theme.useToken()
+  const [currentAnswer, setCurrentAnswer] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [inputValue, setInputValue] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: 'assistant', content: '你好，我是你的AI助手，有什么可以帮助你的吗？' },
+  ])
+  const userAvatarStyle: React.CSSProperties = {
+    color: '#fff',
+    backgroundColor: '#87d068',
+  }
 
+  const aiAvatarStyle: React.CSSProperties = {
+    color: '#f56a00',
+    backgroundColor: '#fde3cf',
+  }
+  const messageEndRef = useRef<HTMLDivElement>(null)
+  const { token } = theme.useToken()
+  const { ready } = useClientAuthRedirect();
   const md = markdownit({ html: true, breaks: true })
   md.renderer.rules.paragraph_open = (tokens, idx, options, env, self) => {
     tokens[idx].attrSet('style', 'margin-bottom: 0px;')
     return self.renderToken(tokens, idx, options)
   }
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, currentAnswer])
 
   const renderMarkdown: BubbleProps['messageRender'] = (content) => {
     return (
@@ -38,32 +58,12 @@ const ChatPage: React.FC = () => {
     dangerouslyApiKey: 'Bearer sk-gjXue7p1Wn76hTQe1b32089c903c48F6B62e86De01A5342b',
   })
 
-  const userAvatarStyle: React.CSSProperties = {
-    color: '#fff',
-    backgroundColor: '#87d068',
-  }
-
-  const aiAvatarStyle: React.CSSProperties = {
-    color: '#f56a00',
-    backgroundColor: '#fde3cf',
-  }
-
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: '你好，我是你的AI助手，有什么可以帮助你的吗？' },
-  ])
-  const [currentAnswer, setCurrentAnswer] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [inputValue, setInputValue] = useState('')
-  const messageEndRef = useRef<HTMLDivElement>(null)
-
   const handleSend = async (content: string) => {
     if (!content.trim()) return
-
     const newMessages: ChatMessage[] = [...messages, { role: 'user', content }]
     setMessages(newMessages)
     setLoading(true)
     setCurrentAnswer('')
-
     let finalAnswer = '' // 临时变量收集完整流内容
 
     try {
@@ -112,11 +112,14 @@ const ChatPage: React.FC = () => {
       setInputValue('')
     }
   }
-
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, currentAnswer])
-
+  // 只控制返回内容，不跳过 Hooks 执行
+  if (!ready) {
+    return (
+      <>
+        <Spin tip="正在加载中..." size="large" fullscreen />
+      </>
+    )
+  }
   return (
     <Layout style={{ minHeight: '100vh', background: token.colorBgLayout }}>
       <Header
