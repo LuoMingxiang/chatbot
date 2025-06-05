@@ -46,8 +46,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error('API /chat 错误:', e);
+    const err = e as Error;
     return new Response(
-      JSON.stringify({ error: '服务器错误', detail: e.message }),
+      JSON.stringify({ error: '服务器错误', detail: err.message }),
       { status: 500 }
     );
   }
