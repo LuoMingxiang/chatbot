@@ -7,7 +7,7 @@ import { UserOutlined, RobotOutlined, CloudUploadOutlined, LinkOutlined } from '
 import markdownit from 'markdown-it'
 import type { BubbleProps, AttachmentsProps } from '@ant-design/x'
 import type { GetProp, GetRef } from 'antd'
-import type { UploadFile, RcFile } from 'antd/es/upload/interface'
+// import type { UploadFile, RcFile } from 'antd/es/upload/interface'
 import { useClientAuthRedirect } from '@/hooks/useClientAuthRedirect';
 import useUser from '@/hooks/useUser'
 import { supabase } from '@/lib/supabase'
@@ -33,105 +33,6 @@ const ChatPage: React.FC = () => {
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false) // 附件面板是否打开
   const [attachmentFiles, setAttachmentFiles] = useState<GetProp<AttachmentsProps, 'items'>>([]) // 上传状态列表
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; url: string; size: number }>>([]) // 已上传文件列表
-
-  /**
- * 判断两个文件是否相同，通过比较文件名、大小和最后修改时间
- * @param {Object} f1 - 第一个文件对象，包含 name、size 和可选的 lastModified 属性
- * @param {string} f1.name - 文件名
- * @param {number} f1.size - 文件大小（字节数）
- * @param {number} [f1.lastModified] - 文件最后修改时间（时间戳）
- * @param {Object} f2 - 第二个文件对象，结构同 f1
- * @returns {boolean} 如果两个文件名、大小和最后修改时间都相同，则返回 true，否则返回 false
- */
-  const isSameFile = (
-    f1: { name: string; size: number; lastModified?: number },
-    f2: { name: string; size: number; lastModified?: number }
-  ): boolean => f1.name === f2.name && f1.size === f2.size && f1.lastModified === f2.lastModified;
-
-  /**
-   * 过滤掉已存在的重复文件，只返回未重复的新文件
-   * @param {File[]} newFiles - 新上传的文件数组
-   * @param {Array<{name: string, size: number, lastModified?: number}>} uploadedFiles - 已上传的文件数组
-   * @param {Array<{name: string, size: number, lastModified?: number}>} attachmentFiles - 当前附件面板中的文件数组
-   * @returns {File[]} 返回过滤后的文件数组，不包含重复文件
-   */
-  const filterDuplicateFiles = (
-    newFiles: File[],
-    uploadedFiles: Array<{ name: string; size: number; lastModified?: number }>,
-    attachmentFiles: Array<{ name: string; size: number; lastModified?: number }>
-  ): File[] => {
-    return newFiles.filter(file =>
-      !uploadedFiles.concat(attachmentFiles).some(f => isSameFile(f, file))
-    );
-  };
-
-  // 处理文件上传
-  const handleFileUpload = async (files: File[]) => {
-    if (files.length === 0) return;
-    try {
-      // 检查文件是否已存在
-      const newFiles = filterDuplicateFiles(files, uploadedFiles, attachmentFiles);
-
-      if (newFiles.length === 0) {
-        message.warning('该文件已经上传过了');
-        return;
-      }
-      // 显示上传中提示
-      const loadingMessage = message.loading('文件上传中...', 0);
-
-      // 批量上传文件
-      const uploadPromises = newFiles.map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.details || result.error || '文件上传失败');
-        }
-
-        return {
-          name: file.name,
-          url: result.publicUrl,
-          size: file.size
-        };
-      });
-      const results = await Promise.all(uploadPromises);
-
-      // 关闭加载提示
-      loadingMessage();
-
-      // 更新已上传文件列表
-      setUploadedFiles(prev => [...prev, ...results]);
-
-      // 更新文件状态为已完成
-      setAttachmentFiles(prev =>
-        prev.map(f => {
-          const uploadedFile = results.find(r => r.name === f.name);
-          return uploadedFile ? { ...f, status: 'done' } : f;
-        })
-      );
-
-      // 显示成功提示
-      message.success(`成功上传 ${results.length} 个文件`);
-      console.log('新上传的文件:', files, '已上传的文件:', uploadedFiles, '当前附件面板中的文件:', attachmentFiles);
-
-    } catch (error) {
-      console.error('文件上传错误:', error);
-      const errorMessage = error instanceof Error ? error.message : '文件上传失败';
-      message.error(errorMessage);
-
-      // 更新失败文件的状态
-      setAttachmentFiles(prev =>
-        prev.map(f => {
-          const failedFile = files.find(file => file.name === f.name);
-          return failedFile ? { ...f, status: 'error' } : f;
-        })
-      );
-    }
-  };
 
   // 样式相关
   const userAvatarStyle: React.CSSProperties = {
@@ -270,18 +171,48 @@ const ChatPage: React.FC = () => {
     const maxSize = 10 * 1024 * 1024; // 10MB
     return validTypes.includes(file.type) && file.size <= maxSize;
   };
+  // 处理文件上传
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+    try {
+      // todo检查文件是否已存在
+
+      // 显示上传中提示
+      message.loading('文件上传中...');
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.details || result.error || '文件上传失败');
+      }
+      // 更新attachmentFiles
+      setAttachmentFiles(prev => prev.map(f => {
+        if (f.name === file.name) {
+          return { ...f, status: 'done', url: result.publicUrl, size: file.size };
+        }
+        return f;
+      }));
+    } catch (error) {
+      console.error('文件上传错误:', error);
+      const errorMessage = error instanceof Error ? error.message : '文件上传失败';
+      message.error(errorMessage);
+    }
+  };
   const beforeUpload: AttachmentsProps['beforeUpload'] = async (file) => {
     // 检查文件类型和大小
     checkFileTypeAndSize(file)
+    // 上传文件
+    handleFileUpload(file);
+  }
+  const handleFileChange: AttachmentsProps['onChange'] = async ({ fileList }) => {
     // 检查文件是否已存在
-    const filtered = filterDuplicateFiles([file], uploadedFiles, attachmentFiles);
-    if (filtered.length === 0) {
-      message.warning(`文件 "${file.name}" 已经上传过了`);
-      console.log(attachmentFiles);
-
-      return false;
-    }
-    return true;
+    console.log(attachmentFiles);
+    // 更新上传状态列表
+    setAttachmentFiles(fileList);
   }
   // 附件上传面板配置
   const attachmentPanel = (
@@ -300,22 +231,7 @@ const ChatPage: React.FC = () => {
         ref={attachmentsRef}
         beforeUpload={beforeUpload}
         items={attachmentFiles}
-        onChange={async ({ fileList }) => {
-          // 找出新添加的文件（状态为 uploading 且之前不在列表中）
-          const newFiles = fileList.filter(file => {
-            const isNew = file.status === 'uploading' && file.originFileObj;
-            const wasInList = attachmentFiles.some(f => f.uid === file.uid);
-            const isDuplicate = uploadedFiles.some(f => f.name === file.name);
-            return isNew && !wasInList && !isDuplicate;
-          }).map(file => file.originFileObj as File);
-
-          // 更新上传状态列表
-          setAttachmentFiles(fileList);
-          if (newFiles.length > 0) {
-            // 批量上传新文件
-            await handleFileUpload(newFiles);
-          }
-        }}
+        onChange={handleFileChange}
         placeholder={(type) =>
           type === 'drop'
             ? {
@@ -456,37 +372,7 @@ const ChatPage: React.FC = () => {
             onSubmit={handleSend}
             value={inputValue}
             onChange={setInputValue}
-            onPasteFile={async (_, files) => {
-              // 检查文件是否已存在
-              const fileArray = Array.from(files);
-              const newFiles = filterDuplicateFiles(fileArray, uploadedFiles, attachmentFiles);
-              if (newFiles.length === 0) {
-                message.warning('这些文件已经上传过了');
-                return;
-              }
-
-              // 处理粘贴的文件
-              const fileList: UploadFile[] = newFiles.map(file => {
-                const rcFile = file as RcFile;
-                return {
-                  uid: Math.random().toString(36).substring(2),
-                  name: file.name,
-                  status: 'uploading',
-                  originFileObj: rcFile,
-                  lastModified: file.lastModified,
-                  lastModifiedDate: new Date(file.lastModified),
-                  size: file.size,
-                  type: file.type
-                };
-              });
-
-              // 更新上传状态列表
-              setAttachmentFiles(prev => [...prev, ...fileList]);
-
-              // 上传文件
-              await handleFileUpload(newFiles);
-              setIsAttachmentPanelOpen(true);
-            }}
+            onPasteFile={() => { }}
             disabled={loading}
             placeholder="请输入你的问题..."
           />
