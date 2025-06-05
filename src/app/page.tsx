@@ -51,11 +51,8 @@ const ChatPage: React.FC = () => {
       </Typography>
     )
   }
-
   const request = XRequest({
-    baseURL: 'https://api.openai-next.com/v1/chat/completions',
-    model: 'gpt-4o-mini',
-    dangerouslyApiKey: 'Bearer sk-gjXue7p1Wn76hTQe1b32089c903c48F6B62e86De01A5342b',
+    baseURL: '/api/chat'
   })
 
   const handleSend = async (content: string) => {
