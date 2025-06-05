@@ -2,12 +2,14 @@
 
 import { Bubble, Sender, XRequest } from '@ant-design/x'
 import { useState, useRef, useEffect } from 'react'
-import { Typography, Layout, theme, Flex, Spin, Avatar, Popover } from 'antd'
+import { Typography, Layout, theme, Flex, Spin, Avatar, Popover, Button } from 'antd'
 import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 import markdownit from 'markdown-it'
 import type { BubbleProps } from '@ant-design/x'
 import { useClientAuthRedirect } from '@/hooks/useClientAuthRedirect';
 import useUser from '@/hooks/useUser'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 const { Header, Content } = Layout
 const { Title } = Typography
 
@@ -27,7 +29,6 @@ const ChatPage: React.FC = () => {
     color: '#fff',
     backgroundColor: '#87d068',
   }
-
   const aiAvatarStyle: React.CSSProperties = {
     color: '#f56a00',
     backgroundColor: '#fde3cf',
@@ -36,27 +37,38 @@ const ChatPage: React.FC = () => {
   const { token } = theme.useToken()
   const { ready } = useClientAuthRedirect();
   const { user } = useUser()
+  const router = useRouter();
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+  // 用户信息内容
   const userContent = (
-    <div style={{ width: 200 }}>
-      <Typography.Text strong>
+    <div>
+      <p className="text-lg font-bold truncate">
         {user?.user_metadata?.full_name || user?.email}
-      </Typography.Text>
-      <br />
-      <Typography.Text type="secondary">
+      </p>
+      <p className="text-xs text-gray-500 mt-1 truncate">
         {user?.email}
-      </Typography.Text>
+      </p>
+      <div className="mt-2">
+        <Button color="primary" variant="filled" className="w-full" onClick={handleLogout}>
+          退出登陆
+        </Button>
+      </div>
     </div>
   )
-
+  // mdown-it 配置
   const md = markdownit({ html: true, breaks: true })
   md.renderer.rules.paragraph_open = (tokens, idx, options, env, self) => {
     tokens[idx].attrSet('style', 'margin-bottom: 0px;')
     return self.renderToken(tokens, idx, options)
   }
+  // 处理滚动到最新消息
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, currentAnswer])
-
+  // 渲染 Markdown 内容
   const renderMarkdown: BubbleProps['messageRender'] = (content) => {
     return (
       <Typography>
@@ -64,10 +76,11 @@ const ChatPage: React.FC = () => {
       </Typography>
     )
   }
+  // 创建请求实例
   const request = XRequest({
     baseURL: '/api/chat'
   })
-
+  // 发送消息处理函数
   const handleSend = async (content: string) => {
     if (!content.trim()) return
     const newMessages: ChatMessage[] = [...messages, { role: 'user', content }]
@@ -75,7 +88,6 @@ const ChatPage: React.FC = () => {
     setLoading(true)
     setCurrentAnswer('')
     let finalAnswer = '' // 临时变量收集完整流内容
-
     try {
       await request.create(
         {
