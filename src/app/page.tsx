@@ -100,6 +100,8 @@ const ChatPage: React.FC = () => {
           onUpdate: (chunk) => {
             if (!chunk) return
             try {
+              // 流式响应结束标志，直接忽略或处理结束逻辑
+              if (chunk.data.trim() === '[DONE]') return
               const parsed = JSON.parse(chunk.data)
               const content = parsed?.choices?.[0]?.delta?.content
               if (content) {
