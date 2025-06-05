@@ -2,12 +2,12 @@
 
 import { Bubble, Sender, XRequest } from '@ant-design/x'
 import { useState, useRef, useEffect } from 'react'
-import { Typography, Layout, theme, Flex, Spin } from 'antd'
+import { Typography, Layout, theme, Flex, Spin, Avatar, Popover } from 'antd'
 import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 import markdownit from 'markdown-it'
 import type { BubbleProps } from '@ant-design/x'
 import { useClientAuthRedirect } from '@/hooks/useClientAuthRedirect';
-
+import useUser from '@/hooks/useUser'
 const { Header, Content } = Layout
 const { Title } = Typography
 
@@ -35,6 +35,19 @@ const ChatPage: React.FC = () => {
   const messageEndRef = useRef<HTMLDivElement>(null)
   const { token } = theme.useToken()
   const { ready } = useClientAuthRedirect();
+  const { user } = useUser()
+  const userContent = (
+    <div style={{ width: 200 }}>
+      <Typography.Text strong>
+        {user?.user_metadata?.full_name || user?.email}
+      </Typography.Text>
+      <br />
+      <Typography.Text type="secondary">
+        {user?.email}
+      </Typography.Text>
+    </div>
+  )
+
   const md = markdownit({ html: true, breaks: true })
   md.renderer.rules.paragraph_open = (tokens, idx, options, env, self) => {
     tokens[idx].attrSet('style', 'margin-bottom: 0px;')
@@ -120,6 +133,7 @@ const ChatPage: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: token.colorBgLayout }}>
       <Header
+        className='flex justify-between items-center'
         style={{
           background: token.colorBgContainer,
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
@@ -135,6 +149,13 @@ const ChatPage: React.FC = () => {
         <Title level={4} style={{ margin: 0 }}>
           AI 智能助手
         </Title>
+        <Popover placement="rightTop" content={userContent}>
+          <Avatar
+            style={{ backgroundColor: '#fde3cf', color: '#f56a00' }}
+            size={{ xs: 24, sm: 32, md: 36, lg: 38, xl: 42, xxl: 48 }}
+          >U</Avatar>
+        </Popover>
+
       </Header>
 
       <Content
