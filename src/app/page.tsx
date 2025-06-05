@@ -8,6 +8,7 @@ import markdownit from 'markdown-it'
 import type { BubbleProps, AttachmentsProps } from '@ant-design/x'
 import type { GetProp, GetRef } from 'antd'
 // import type { UploadFile, RcFile } from 'antd/es/upload/interface'
+// import type { RcFile } from 'antd/es/upload/interface'
 import { useClientAuthRedirect } from '@/hooks/useClientAuthRedirect';
 import useUser from '@/hooks/useUser'
 import { supabase } from '@/lib/supabase'
@@ -165,18 +166,10 @@ const ChatPage: React.FC = () => {
       setInputValue('');
     }
   };
-  // 检查文件大小不超过10MB，类型限制为图片、PDF、文本和 Word 文档
-  const checkFileTypeAndSize = (file: File): boolean => {
-    const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    return validTypes.includes(file.type) && file.size <= maxSize;
-  };
   // 处理文件上传
   const handleFileUpload = async (file: File) => {
     if (!file) return;
     try {
-      // todo检查文件是否已存在
-
       // 显示上传中提示
       message.loading('文件上传中...');
       const formData = new FormData();
@@ -189,31 +182,62 @@ const ChatPage: React.FC = () => {
       if (!response.ok) {
         throw new Error(result.details || result.error || '文件上传失败');
       }
-      // 更新attachmentFiles
+      message.success('文件上传成功！')
+      // 更新上传状态列表
       setAttachmentFiles(prev => prev.map(f => {
         if (f.name === file.name) {
           return { ...f, status: 'done', url: result.publicUrl, size: file.size };
         }
         return f;
       }));
+
     } catch (error) {
       console.error('文件上传错误:', error);
       const errorMessage = error instanceof Error ? error.message : '文件上传失败';
       message.error(errorMessage);
     }
   };
+  const validateFile = (file: File, existingFiles: typeof attachmentFiles): string | null => {
+    const validTypes = ['image/png', 'image/jpeg', 'image/gif', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!validTypes.includes(file.type)) {
+      return '文件类型不支持！';
+    }
+
+    if (file.size > maxSize) {
+      return '文件大小超过10MB！';
+    }
+
+    const isDuplicate = existingFiles.some(f => f.name === file.name);
+    if (isDuplicate) {
+      return `${file.name} 已存在`;
+    }
+
+    return null;
+  };
+
   const beforeUpload: AttachmentsProps['beforeUpload'] = async (file) => {
-    // 检查文件类型和大小
-    checkFileTypeAndSize(file)
-    // 上传文件
-    handleFileUpload(file);
+    const error = validateFile(file, attachmentFiles);
+    if (error) {
+      message.warning(error);
+      return false;
+    }
+
+
+    // 上传
+    handleFileUpload(file)
   }
-  const handleFileChange: AttachmentsProps['onChange'] = async ({ fileList }) => {
-    // 检查文件是否已存在
-    console.log(attachmentFiles);
-    // 更新上传状态列表
+
+  const handleFileChange: AttachmentsProps['onChange'] = async ({ file, fileList }) => {
+    // todo 显示列表仍然存在
+    const index = attachmentFiles.findIndex(f => f.name === file.name);
+    if (index !== -1) {
+      fileList.splice(index, 1);
+      return;
+    }
     setAttachmentFiles(fileList);
-  }
+  };
   // 附件上传面板配置
   const attachmentPanel = (
     <Sender.Header

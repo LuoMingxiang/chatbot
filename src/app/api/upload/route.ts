@@ -22,11 +22,6 @@ export async function POST(request: Request) {
   try {
     const cookieStore = cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    // const { data: { user } } = await supabase.auth.getUser();
-
-    // if (!user) {
-    //   return NextResponse.json({ error: '未登录' }, { status: 401 });
-    // }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -60,6 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           message: '文件已存在，直接返回',
+          repeat:true,
           filePath,
           publicUrl: urlData.publicUrl,
           fileName: file.name,
@@ -103,6 +99,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message: '文件上传成功',
+        repeat:false,
         filePath,
         publicUrl: urlData.publicUrl,
         fileName: file.name,
