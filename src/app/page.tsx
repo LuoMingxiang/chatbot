@@ -190,7 +190,6 @@ const ChatPage: React.FC = () => {
         }
         return f;
       }));
-
     } catch (error) {
       console.error('文件上传错误:', error);
       const errorMessage = error instanceof Error ? error.message : '文件上传失败';
@@ -221,22 +220,19 @@ const ChatPage: React.FC = () => {
     const error = validateFile(file, attachmentFiles);
     if (error) {
       message.warning(error);
+      // 删除重复的文件
+      const newFileList = attachmentFiles.filter(f => f.name !== file.name);
+      setAttachmentFiles(newFileList);
       return false;
     }
-
-
     // 上传
     handleFileUpload(file)
   }
 
-  const handleFileChange: AttachmentsProps['onChange'] = async ({ file, fileList }) => {
-    // todo 显示列表仍然存在
-    const index = attachmentFiles.findIndex(f => f.name === file.name);
-    if (index !== -1) {
-      fileList.splice(index, 1);
-      return;
-    }
+  const handleFileChange: AttachmentsProps['onChange'] = async ({ fileList }) => {
     setAttachmentFiles(fileList);
+    console.log('附件列表更新:', fileList);
+
   };
   // 附件上传面板配置
   const attachmentPanel = (
