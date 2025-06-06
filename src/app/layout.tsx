@@ -30,9 +30,11 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ConfigProvider locale={zhCN}>
-          <AntdRegistry>{children}</AntdRegistry>
-        </ConfigProvider>
+        <AntdRegistry>
+          <ConfigProvider locale={zhCN}>
+            {children}
+          </ConfigProvider>
+        </AntdRegistry>
       </body>
     </html>
   );
